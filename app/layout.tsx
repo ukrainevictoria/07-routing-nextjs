@@ -1,14 +1,23 @@
+import { ReactNode } from 'react';
 import TanStackProvider from '@/components/TanStackProvider';
+import Header from '@/components/Header/Header';
+import Footer from '@/components/Footer/Footer';
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+interface RootLayoutProps {
+  children: ReactNode;
+  modal: ReactNode;
+}
+
+export default function RootLayout({ children, modal }: RootLayoutProps) {
   return (
     <html lang="uk">
       <body>
-        <TanStackProvider>{children}</TanStackProvider>
+        <TanStackProvider>
+          <Header />
+          {children}
+          {modal}
+          <Footer />
+        </TanStackProvider>
       </body>
     </html>
   );

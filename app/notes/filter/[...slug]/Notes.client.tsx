@@ -1,63 +1,63 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { useDebounce } from 'use-debounce';
 import { fetchNotes } from '@/lib/api';
-import { Note } from '@/types/note';
-import css from './NotesPage.module.css';
-import paginationCss from '@/components/Pagination/Pagination.module.css';
+import { Note, FetchNotesResponse } from '@/types/note';
+
+import NoteList from '@/components/NoteList/NoteList';
+import SearchBox from '@/components/SearchBox/SearchBox';
+import Pagination from '@/components/Pagination/Pagination';
+import Modal from '@/components/Modal/Modal';
+import NoteForm from '@/components/NoteForm/NoteForm';
+
 interface NotesClientProps {
   tag: string;
 }
 
 export default function NotesClient({ tag }: NotesClientProps) {
-  const [page, setPage] = useState(1);
-  const [search] = useState('');
+  const [page, setPage] = useState<number>(1);
+  const [search, setSearch] = useState<string>('');
+  const [debouncedSearch] = useDebounce(search, 500);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['notes', { page, search, tag }],
-    queryFn: () => fetchNotes({ page, search, tag }),
+  const { data, isLoading, isError } = useQuery<FetchNotesResponse>({
+    queryKey: ['notes', { page, search: debouncedSearch, tag }],
+    queryFn: () => fetchNotes({ page, search: debouncedSearch, tag }),
   });
 
-  if (isLoading) return <div>Loading notes...</div>;
-  if (isError) return <div>Failed to load notes.</div>;
+  const handleSearchChange = (value: string): void => {
+    setSearch(value);
+    setPage(1);
+  };
 
-  const totalPages = data?.totalPages || 1;
+  const notes: Note[] = data?.notes ?? [];
+  const totalPages: number = data?.totalPages ?? 1;
+
+  if (isLoading) return <div>Loading notes...</div>;
+  if (isError) return <div>Error fetching notes</div>;
 
   return (
-    <div className={css.container}>
-      <ul className={css.grid}>
-        {data?.notes.map((note: Note) => (
-          <li key={note.id} className={css.card}>
-            <Link href={`/notes/${note.id}`}>
-              <h3>{note.title}</h3>
-              <p>{note.content}</p>
-            </Link>
-          </li>
-        ))}
-      </ul>
+    <div>
+      <SearchBox value={search} onChange={handleSearchChange} />
 
-      {/* Блок пагінації */}
-      {totalPages > 1 && (
-        <div className={paginationCss.pagination}>
-          <button
-            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-            disabled={page === 1}
-          >
-            Previous
-          </button>
-          <span>
-            {page} / {totalPages}
-          </span>
-          <button
-            onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
-            disabled={page === totalPages}
-          >
-            Next
-          </button>
-        </div>
+      <button onClick={() => setIsModalOpen(true)}>Create Note</button>
+
+      {isModalOpen && (
+        <Modal onClose={() => setIsModalOpen(false)}>
+          <NoteForm onClose={() => setIsModalOpen(false)} />
+        </Modal>
       )}
+
+      <NoteList notes={notes} />
+
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={(newPage: number) => setPage(newPage)}
+      />
     </div>
   );
 }
+
