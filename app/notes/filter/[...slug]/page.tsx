@@ -1,6 +1,6 @@
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { fetchNotes } from '@/lib/api';
-import NotesClient from './NotesClient';
+import NotesClient from './Notes.client';
 
 interface PageProps {
   params: Promise<{ slug?: string[] }>;
